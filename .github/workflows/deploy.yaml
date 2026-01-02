@@ -1,0 +1,33 @@
+name: Deploy to k3s
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push image
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/go-api:latest .
+          docker push ghcr.io/${{ github.repository_owner }}/go-api:latest
+
+      - name: Set kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+
+      - name: Deploy to k3s
+        run: |
+          kubectl apply -f k8s/
