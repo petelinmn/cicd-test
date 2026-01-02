@@ -1,38 +1,69 @@
+# Workflow name displayed in GitHub Actions UI
 name: Deploy to k3s
 
+# Trigger conditions for this workflow
 on:
   push:
+    # Run only when pushing to the main branch
     branches: [ "main" ]
 
+# Permissions required by this workflow
 permissions:
+  # Read access to repository contents (for checkout)
   contents: read
+  # Write access to GitHub Container Registry (for pushing images)
   packages: write
 
+# Define the jobs to run in this workflow
 jobs:
+  # Job name: deploy
   deploy:
+    # Use Ubuntu as the runner environment
     runs-on: ubuntu-latest
 
+    # Steps to execute in sequence
     steps:
+      # Step 1: Checkout the repository code
       - uses: actions/checkout@v4
 
+      # Step 2: Authenticate with GitHub Container Registry (GHCR)
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
+          # Registry URL for GitHub Container Registry
           registry: ghcr.io
+          # Username is the person/bot that triggered the workflow
           username: ${{ github.actor }}
+          # Password is the auto-generated GitHub token (has packages:write permission)
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Step 3: Build Docker image and push to registry
       - name: Build & Push image
         run: |
+          # Build image with tag using commit SHA (ensures unique tag per commit)
+          # ${{ github.repository_owner }} = your GitHub username
+          # ${GITHUB_SHA} = full commit hash (e.g., abc123...)
           docker build -t ghcr.io/${{ github.repository_owner }}/go-api:${GITHUB_SHA} .
+          # Push the built image to GitHub Container Registry
           docker push ghcr.io/${{ github.repository_owner }}/go-api:${GITHUB_SHA}
 
+      # Step 4: Configure kubectl to connect to your k3s cluster
       - name: Set kubeconfig
         run: |
+          # Create .kube directory for kubectl configuration
           mkdir -p ~/.kube
+          # Write kubeconfig from GitHub secrets to config file
+          # KUBECONFIG secret should contain your k3s cluster credentials
           echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
 
+      # Step 5: Update deployment manifest and apply to cluster
       - name: Deploy to k3s
         run: |
+          # Replace IMAGE_TAG placeholder with actual commit SHA
+          # This ensures each deployment uses the correct image version
+          # -i = edit file in-place
+          # s|OLD|NEW|g = substitute OLD with NEW globally
           sed -i "s|IMAGE_TAG|${GITHUB_SHA}|g" k8s/deployment.yaml
+          # Apply all Kubernetes manifests in k8s/ directory
+          # This creates or updates resources (deployment, service, etc.)
           kubectl apply -f k8s/

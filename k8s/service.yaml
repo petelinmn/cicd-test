@@ -1,11 +1,24 @@
+# Kubernetes API version for Service resources
 apiVersion: v1
+# Type of Kubernetes resource (Service exposes Pods to network traffic)
 kind: Service
+# Metadata identifies this service in the cluster
 metadata:
+  # Name of this service (used by other services and kubectl commands)
   name: go-api
+# Specification of the desired service behavior
 spec:
+  # Type of service - NodePort exposes the service on each node's IP at a static port
+  # (Alternative types: ClusterIP for internal-only, LoadBalancer for cloud load balancer)
   type: NodePort
+  # Selector determines which Pods receive traffic from this service
   selector:
+    # Routes traffic to Pods with label "app: go-api" (matches deployment labels)
     app: go-api
+  # List of ports this service exposes
   ports:
+    # Port 80 is the service port (what other services/users connect to)
     - port: 80
+      # targetPort 8080 is the container port (where your Go app listens)
+      # Traffic to service port 80 gets forwarded to pod port 8080
       targetPort: 8080

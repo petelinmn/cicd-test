@@ -1,20 +1,38 @@
+# Kubernetes API version for Deployment resources
 apiVersion: apps/v1
+# Type of Kubernetes resource (Deployment manages a set of Pods)
 kind: Deployment
+# Metadata identifies this deployment in the cluster
 metadata:
+  # Name of this deployment (used by kubectl and other resources)
   name: go-api
+# Specification of the desired deployment state
 spec:
+  # Number of Pod replicas to maintain (1 = single instance)
   replicas: 1
+  # Selector defines which Pods this Deployment manages
   selector:
+    # Must match the labels in template.metadata.labels
     matchLabels:
       app: go-api
+  # Template for creating new Pods
   template:
+    # Metadata for the Pods created by this template
     metadata:
+      # Labels attached to each Pod (must match selector above)
       labels:
         app: go-api
+    # Specification for the Pod containers
     spec:
+      # List of containers to run in each Pod
       containers:
+        # Container name (used in logs and kubectl commands)
         - name: go-api
+          # Container image location (IMAGE_TAG is replaced by CI/CD with actual commit SHA)
           image: ghcr.io/petelinmn/go-api:IMAGE_TAG
+          # Always pull image from registry (ensures updates are applied even with same tag)
           imagePullPolicy: Always
+          # Ports exposed by this container
           ports:
+            # Port the Go application listens on inside the container
             - containerPort: 8080
