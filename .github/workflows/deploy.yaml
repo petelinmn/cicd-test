@@ -34,4 +34,5 @@ jobs:
 
       - name: Deploy to k3s
         run: |
+          sed -i "s|IMAGE_TAG|${GITHUB_SHA}|g" k8s/deployment.yaml
           kubectl apply -f k8s/
