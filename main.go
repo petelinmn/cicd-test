@@ -7,7 +7,7 @@ import (
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "ok2")
+	fmt.Fprintln(w, "ok3")
 }
 
 func main() {
