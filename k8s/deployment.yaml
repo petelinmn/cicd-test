@@ -13,7 +13,8 @@ spec:
         app: go-api
     spec:
       containers:
-        - name: go-api
-          image: ghcr.io/petelinmn/go-api:latest
-          ports:
-            - containerPort: 8080
+      - name: go-api
+        image: ghcr.io/petelinmn/go-api:${{ github.sha }}
+        ports:
+        - containerPort: 8080
+        imagePullPolicy: Always
