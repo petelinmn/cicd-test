@@ -7,7 +7,7 @@ import (
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "ok5 detailed comments (also for service)")
+	fmt.Fprintln(w, "ok6 detailed comments (also for service)")
 }
 
 func main() {
