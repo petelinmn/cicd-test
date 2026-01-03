@@ -1,0 +1,78 @@
+# GitLab CI/CD pipeline configuration
+# Runs automatically on push to main branch
+
+# Define the execution stages (run in order)
+stages:
+  - build    # Build and push Docker image
+  - deploy   # Deploy to k3s cluster
+
+# Global variables available to all jobs
+variables:
+  # Docker image name using GitLab's container registry
+  # $CI_REGISTRY = registry.gitlab.com
+  # $CI_PROJECT_PATH = your-username/cicgit d-test
+  IMAGE_NAME: $CI_REGISTRY/$CI_PROJECT_PATH/go-api
+  # Use Docker-in-Docker for building images
+  DOCKER_DRIVER: overlay2
+
+# Job 1: Build and push Docker image
+build:
+  # Stage this job belongs to
+  stage: build
+  # Use Docker-in-Docker image (allows building Docker images inside CI)
+  image: docker:latest
+  # Services to run alongside the job (dind = Docker-in-Docker daemon)
+  services:
+    - docker:dind
+  # Only run this job when pushing to main branch
+  only:
+    - main
+  # Before running the script, login to GitLab Container Registry
+  before_script:
+    # Login using built-in GitLab credentials
+    # $CI_REGISTRY_USER = automatically set to gitlab-ci-token
+    # $CI_REGISTRY_PASSWORD = automatically set job token with registry write access
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  # Main execution script
+  script:
+    # Build Docker image tagged with commit SHA (ensures unique tag per commit)
+    # $CI_COMMIT_SHA = full commit hash (e.g., abc123...)
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHA .
+    # Also tag as 'latest' for convenience
+    - docker tag $IMAGE_NAME:$CI_COMMIT_SHA $IMAGE_NAME:latest
+    # Push both tags to GitLab Container Registry
+    - docker push $IMAGE_NAME:$CI_COMMIT_SHA
+    - docker push $IMAGE_NAME:latest
+
+# Job 2: Deploy to k3s cluster
+deploy:
+  # Stage this job belongs to (runs after build stage completes)
+  stage: deploy
+  # Use image with kubectl pre-installed
+  image: bitnami/kubectl:latest
+  # Only run this job when pushing to main branch
+  only:
+    - main
+  # Before running the script, configure kubectl
+  before_script:
+    # Create .kube directory for kubectl configuration
+    - mkdir -p ~/.kube
+    # Write kubeconfig from GitLab CI/CD variable to config file
+    # You need to create KUBECONFIG variable in GitLab:
+    # Settings > CI/CD > Variables > Add Variable
+    # Name: KUBECONFIG, Value: (paste your k3s.yaml content), Type: File
+    - echo "$KUBECONFIG" > ~/.kube/config
+    # Set proper permissions for kubeconfig file
+    - chmod 600 ~/.kube/config
+  # Main execution script
+  script:
+    # Replace IMAGE_TAG placeholder with actual commit SHA in deployment manifest
+    # This ensures each deployment uses the correct versioned image
+    - sed -i "s|IMAGE_TAG|$CI_COMMIT_SHA|g" k8s/deployment.yaml
+    # Apply all Kubernetes manifests in k8s/ directory
+    # This creates or updates resources (deployment, service, etc.)
+    - kubectl apply -f k8s/
+    # Optional: Wait for deployment to complete and show status
+    - kubectl rollout status deployment/go-api
+    # Optional: Show the running pods
+    - kubectl get pods -l app=go-api
