@@ -10,6 +10,14 @@ metadata:
 spec:
   # Number of Pod replicas to maintain (1 = single instance)
   replicas: 1
+  # Rolling update strategy - controls how new pods replace old ones
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Maximum number of pods that can be unavailable during update
+      maxUnavailable: 0
+      # Maximum number of extra pods that can be created during update
+      maxSurge: 1
   # Selector defines which Pods this Deployment manages
   selector:
     # Must match the labels in template.metadata.labels
@@ -24,6 +32,8 @@ spec:
         app: go-api
     # Specification for the Pod containers
     spec:
+      # How long to wait before forcefully killing the container (default 30s)
+      terminationGracePeriodSeconds: 10
       # List of containers to run in each Pod
       containers:
         # Container name (used in logs and kubectl commands)
@@ -36,3 +46,17 @@ spec:
           ports:
             # Port the Go application listens on inside the container
             - containerPort: 8080
+          # Readiness probe - when is the pod ready to receive traffic
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          # Liveness probe - is the container still running properly
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
