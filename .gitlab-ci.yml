@@ -48,8 +48,8 @@ build:
 deploy:
   # Stage this job belongs to (runs after build stage completes)
   stage: deploy
-  # Use image with kubectl pre-installed
-  image: bitnami/kubectl:latest
+  # Use Alpine Linux with kubectl and other shell utilities
+  image: alpine/k8s:1.28.3
   # Only run this job when pushing to main branch
   only:
     - main
@@ -58,10 +58,9 @@ deploy:
     # Create .kube directory for kubectl configuration
     - mkdir -p ~/.kube
     # Write kubeconfig from GitLab CI/CD variable to config file
-    # You need to create KUBECONFIG variable in GitLab:
-    # Settings > CI/CD > Variables > Add Variable
-    # Name: KUBECONFIG, Value: (paste your k3s.yaml content), Type: File
-    - echo "$KUBECONFIG" > ~/.kube/config
+    # KUBECONFIG variable should be type: File in GitLab CI/CD settings
+    # GitLab automatically writes File-type variables to a temp path
+    - cp $KUBECONFIG ~/.kube/config
     # Set proper permissions for kubeconfig file
     - chmod 600 ~/.kube/config
   # Main execution script
@@ -72,7 +71,7 @@ deploy:
     # Apply all Kubernetes manifests in k8s/ directory
     # This creates or updates resources (deployment, service, etc.)
     - kubectl apply -f k8s/
-    # Optional: Wait for deployment to complete and show status
+    # Wait for deployment to complete and show status
     - kubectl rollout status deployment/go-api
-    # Optional: Show the running pods
+    # Show the running pods
     - kubectl get pods -l app=go-api
