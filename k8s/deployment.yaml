@@ -12,16 +12,20 @@ spec:
   replicas: 1
   # Rolling update strategy - controls how new pods replace old ones
   strategy:
+    # RollingUpdate gradually replaces old pods with new ones (zero downtime)
+    # Alternative: Recreate (terminates all old pods before creating new ones)
     type: RollingUpdate
     rollingUpdate:
-      # Maximum number of pods that can be unavailable during update
+      # Maximum number of pods that can be unavailable during update (0 = no downtime)
       maxUnavailable: 0
-      # Maximum number of extra pods that can be created during update
+      # Maximum number of extra pods that can be created during update (1 = one extra pod temporarily)
       maxSurge: 1
   # Selector defines which Pods this Deployment manages
   selector:
+    # matchLabels uses label selectors to identify which pods belong to this deployment
     # Must match the labels in template.metadata.labels
     matchLabels:
+      # Key-value pair that must match pod labels (app=go-api)
       app: go-api
   # Template for creating new Pods
   template:
@@ -29,10 +33,11 @@ spec:
     metadata:
       # Labels attached to each Pod (must match selector above)
       labels:
+        # app=go-api label identifies pods for this deployment and service routing
         app: go-api
     # Specification for the Pod containers
     spec:
-      # How long to wait before forcefully killing the container (default 30s)
+      # How long to wait before forcefully killing the container (10s is faster than default 30s)
       terminationGracePeriodSeconds: 10
       # List of containers to run in each Pod
       containers:
@@ -46,17 +51,27 @@ spec:
           ports:
             # Port the Go application listens on inside the container
             - containerPort: 8080
-          # Readiness probe - when is the pod ready to receive traffic
+          # Readiness probe - determines when pod is ready to receive traffic
           readinessProbe:
+            # HTTP GET request to check if app is ready
             httpGet:
+              # Endpoint to check (your /health endpoint)
               path: /health
+              # Port to send the request to (matches containerPort)
               port: 8080
+            # Wait 2 seconds after container starts before first probe
             initialDelaySeconds: 2
+            # Check readiness every 5 seconds
             periodSeconds: 5
-          # Liveness probe - is the container still running properly
+          # Liveness probe - detects if container is still running properly
           livenessProbe:
+            # HTTP GET request to check if app is alive
             httpGet:
+              # Endpoint to check (your /health endpoint)
               path: /health
+              # Port to send the request to (matches containerPort)
               port: 8080
+            # Wait 5 seconds after container starts before first probe
             initialDelaySeconds: 5
+            # Check liveness every 10 seconds (restart pod if fails)
             periodSeconds: 10
