@@ -71,7 +71,3 @@ deploy:
     # Apply all Kubernetes manifests in k8s/ directory
     # This creates or updates resources (deployment, service, etc.)
     - kubectl apply -f k8s/
-    # Wait for deployment to complete and show status
-    - kubectl rollout status deployment/go-api
-    # Show the running pods
-    - kubectl get pods -l app=go-api
