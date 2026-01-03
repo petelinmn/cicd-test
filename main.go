@@ -12,7 +12,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "ok10 github")
+	fmt.Fprintln(w, "ok10 gitlab")
 }
 
 func main() {
