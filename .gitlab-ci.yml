@@ -68,6 +68,10 @@ deploy:
     # Replace IMAGE_TAG placeholder with actual commit SHA in deployment manifest
     # This ensures each deployment uses the correct versioned image
     - sed -i "s|IMAGE_TAG|$CI_COMMIT_SHA|g" k8s/deployment.yaml
+    # Replace image registry from GitHub (ghcr.io) to GitLab (registry.gitlab.com)
+    - sed -i "s|ghcr.io/petelinmn|$CI_REGISTRY/$CI_PROJECT_PATH|g" k8s/deployment.yaml
+    # Verify the changes (optional - for debugging)
+    - grep "image:" k8s/deployment.yaml
     # Apply all Kubernetes manifests in k8s/ directory
     # This creates or updates resources (deployment, service, etc.)
     - kubectl apply -f k8s/
